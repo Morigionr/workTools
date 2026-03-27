@@ -37,10 +37,13 @@ public class Scheduler {
     }
 
     private void initPeople() {
-        people.add(new Person("P1", true, false));
-        people.add(new Person("P2", false, true));
+        // 1号：强制每天A1
+        people.add(new Person("P1", true, false, true));
+        // 2号：特殊（只能A1或A）
+        people.add(new Person("P2", false, false, false));
+        // 3-9号：普通
         for (int i = 3; i <= TOTAL_PEOPLE; i++) {
-            people.add(new Person("P" + i, false, false));
+            people.add(new Person("P" + i, false, false, false));
         }
     }
 
@@ -58,7 +61,11 @@ public class Scheduler {
             }
             for (int day = weekStart; day <= weekEnd; day++) {
                 boolean isWeekend = (day % DAYS_PER_WEEK == 5) || (day % DAYS_PER_WEEK == 6);
+                // 先强制安排forceDailyA1人员的A1
+                assignForceDailyA1Shifts(day);
+                // 分配必须的A、B、C
                 assignRequiredShifts(day, isWeekend);
+                // 分配A1（周末不分配，但forceDailyA1已安排）
                 if (!isWeekend) {
                     assignA1Shifts(day, rotatingPerson);
                 }
@@ -77,6 +84,13 @@ public class Scheduler {
         restAdjuster.ensureConsecutiveRestDays();
     }
 
+    private void assignForceDailyA1Shifts(int day) {
+        for (Person p : people) {
+            if (p.forceDailyA1 && !isAssignedOnDay(p, day)) {
+                assignShift(day, ShiftType.A1, p);
+            }
+        }
+    }
     private void assignRequiredShifts(int day, boolean isWeekend) {
         for (ShiftType shift : new ShiftType[]{ShiftType.A, ShiftType.B, ShiftType.C}) {
             Person chosen = null;
@@ -102,12 +116,15 @@ public class Scheduler {
     }
 
     private void assignA1Shifts(int day, Person rotatingPerson) {
+        // 先处理轮值人员
         if (rotatingPerson != null && !isAssignedOnDay(rotatingPerson, day)) {
             if (rotatingPerson.weekWorkDays < WORK_DAYS_PER_CYCLE &&
                     isShiftAllowedForPerson(rotatingPerson, day, ShiftType.A1)) {
                 assignShift(day, ShiftType.A1, rotatingPerson);
             }
         }
+
+        // 再分配其他人，按工作总天数升序循环分配
         List<Person> candidates = new ArrayList<>(people);
         candidates.sort(Comparator.comparingInt(p -> p.workDays));
         boolean changed;
@@ -117,9 +134,10 @@ public class Scheduler {
                 if (isAssignedOnDay(p, day)) continue;
                 if (!p.availableShifts.contains(ShiftType.A1)) continue;
                 if (!isShiftAllowedForPerson(p, day, ShiftType.A1)) continue;
-                assignShift(day, ShiftType.A1, p);
-                changed = true;
-                break;
+                if (assignShift(day, ShiftType.A1, p)) {
+                    changed = true;
+                    break;
+                }
             }
         } while (changed);
     }
@@ -151,20 +169,21 @@ public class Scheduler {
         return monthSchedule.get(day).personShift.containsKey(p.name);
     }
 
-    private void assignShift(int day, ShiftType shift, Person p) {
+    private boolean assignShift(int day, ShiftType shift, Person p) {
         DaySchedule ds = monthSchedule.get(day);
         if (ds.assignments.containsKey(shift)) {
             System.err.println("冲突：第" + (day+1) + "天" + shift + "已被占用！");
-            return;
+            return false;
         }
         if (ds.personShift.containsKey(p.name)) {
             System.err.println("冲突：第" + (day+1) + "天" + p.name + "已被安排！");
-            return;
+            return false;
         }
         ds.assignments.put(shift, p.name);
         ds.personShift.put(p.name, shift);
         p.workDays++;
         p.weekWorkDays++;
+        return true;
     }
 
     public List<Person> getPeople() {

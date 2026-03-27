@@ -25,6 +25,7 @@ public class RestAdjuster {
         for (int attempt = 0; attempt < 50; attempt++) {
             boolean allHaveConsecutive = true;
             for (Person p : scheduler.getPeople()) {
+                if (p.forceDailyA1) continue; // 跳过
                 if (!hasConsecutiveRestDays(p)) {
                     allHaveConsecutive = false;
                     if (createConsecutiveRestForPerson(p)) {
@@ -36,6 +37,7 @@ public class RestAdjuster {
             if (allHaveConsecutive) break;
         }
         for (Person p : scheduler.getPeople()) {
+            if (p.forceDailyA1) continue;
             if (!hasConsecutiveRestDays(p)) {
                 System.err.println("警告：" + p.name + " 仍无连续2天休息，可能无法完全满足。");
             }
