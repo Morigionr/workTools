@@ -14,51 +14,27 @@ import java.util.Set;
  */
 public class Person {
     String name;
-    boolean isFixedA1Only;   // 1号
-    boolean isSpecial2;      // 2号：只能A1或A
-    boolean forceDailyA1;    // 新增：强制每天A1
-    Set<ShiftType> availableShifts; // 动态可用班次（按周调整）
-    int workDays;            // 总工作天数
-    int weekWorkDays;        // 本周已工作天数（用于周平衡）
-    boolean isCurrentWeekA1Only; // 本周是否为轮值A1
-    ShiftType yesterdayShift;     // 前一天所上班次（用于连续性检查）
+    Set<ShiftType> availableShifts;   // 始终包含 A,B,C
+    int workDays;                     // 本周工作天数
+    ShiftType yesterdayShift;         // 前一天所上班次（用于连续性检查）
+    Set<ShiftType> obtainedShifts;    // 本周已获得的班次种类
 
-    public Person(String name, boolean isFixedA1Only, boolean isSpecial2, boolean forceDailyA1) {
+    public Person(String name) {
         this.name = name;
-        this.isFixedA1Only = isFixedA1Only;
-        this.isSpecial2 = isSpecial2;
-        this.forceDailyA1 = forceDailyA1;
         this.availableShifts = new HashSet<>();
+        this.availableShifts.add(ShiftType.A);
+        this.availableShifts.add(ShiftType.B);
+        this.availableShifts.add(ShiftType.C);
         this.workDays = 0;
-        this.weekWorkDays = 0;
-        this.isCurrentWeekA1Only = false;
         this.yesterdayShift = null;
-        updateAvailableShifts();
+        this.obtainedShifts = new HashSet<>();
     }
 
-    public void updateAvailableShifts() {
-        availableShifts.clear();
-        if (forceDailyA1) {
-            availableShifts.add(ShiftType.A1);
-            return;
-        }
-        if (isFixedA1Only) {
-            availableShifts.add(ShiftType.A1);
-            return;
-        }
-        if (isCurrentWeekA1Only) {
-            availableShifts.add(ShiftType.A1);
-            return;
-        }
-        if (isSpecial2) {
-            availableShifts.add(ShiftType.A1);
-            availableShifts.add(ShiftType.A);
-        } else {
-            availableShifts.add(ShiftType.A1);
-            availableShifts.add(ShiftType.A);
-            availableShifts.add(ShiftType.B);
-            availableShifts.add(ShiftType.C);
-        }
+    // 重置每周状态（在生成新一周排班前调用）
+    public void resetWeek() {
+        workDays = 0;
+        yesterdayShift = null;
+        obtainedShifts.clear();
     }
 
     @Override

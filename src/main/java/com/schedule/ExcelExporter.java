@@ -15,7 +15,7 @@ import java.util.List;
  * @apiNote
  */
 public class ExcelExporter {
-    private Scheduler scheduler;
+    private final Scheduler scheduler;
 
     public ExcelExporter(Scheduler scheduler) {
         this.scheduler = scheduler;
@@ -25,34 +25,30 @@ public class ExcelExporter {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("排班表");
 
-        // 创建标题行
         Row headerRow = sheet.createRow(0);
         headerRow.createCell(0).setCellValue("员工\\日期");
         for (int day = 1; day <= Scheduler.TOTAL_DAYS; day++) {
             headerRow.createCell(day).setCellValue(day);
         }
 
-        // 填充数据
         List<Person> people = scheduler.getPeople();
-        List<DaySchedule> monthSchedule = scheduler.getMonthSchedule();
+        List<DaySchedule> weekSchedule = scheduler.getWeekSchedule();
 
         int rowNum = 1;
         for (Person p : people) {
             Row row = sheet.createRow(rowNum++);
             row.createCell(0).setCellValue(p.name);
             for (int day = 0; day < Scheduler.TOTAL_DAYS; day++) {
-                ShiftType shift = monthSchedule.get(day).personShift.get(p.name);
+                ShiftType shift = weekSchedule.get(day).personShift.get(p.name);
                 String cellValue = (shift == null) ? "休息" : shift.name();
                 row.createCell(day + 1).setCellValue(cellValue);
             }
         }
 
-        // 自动调整列宽
         for (int i = 0; i <= Scheduler.TOTAL_DAYS; i++) {
             sheet.autoSizeColumn(i);
         }
 
-        // 写入文件
         try (FileOutputStream fileOut = new FileOutputStream(fileName)) {
             workbook.write(fileOut);
         }

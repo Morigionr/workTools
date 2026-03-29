@@ -10,5 +10,5 @@ package com.schedule;
  *  班次枚举
  */
 public enum ShiftType {
-    A1, A, B, C
+     A, B, C
 }
