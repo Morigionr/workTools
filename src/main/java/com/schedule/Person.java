@@ -6,7 +6,9 @@ package com.schedule;
  * @apiNote
  */
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -19,6 +21,8 @@ public class Person {
     ShiftType yesterdayShift;         // 前一天所上班次（用于连续性检查）
     Set<ShiftType> obtainedShifts;    // 本周已获得的班次种类
 
+    public Map<ShiftType, Integer> shiftCount;
+
     public Person(String name) {
         this.name = name;
         this.availableShifts = new HashSet<>();
@@ -27,7 +31,10 @@ public class Person {
         this.availableShifts.add(ShiftType.C);
         this.workDays = 0;
         this.yesterdayShift = null;
-        this.obtainedShifts = new HashSet<>();
+        this.shiftCount = new HashMap<>();
+        this.shiftCount.put(ShiftType.A, 0);
+        this.shiftCount.put(ShiftType.B, 0);
+        this.shiftCount.put(ShiftType.C, 0);
     }
 
     // 重置每周状态（在生成新一周排班前调用）
